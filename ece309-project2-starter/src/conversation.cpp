@@ -1,4 +1,5 @@
 # include "core/conversation.h"
+# include <stdexcept>
 
 //function definitions for Conversation class following Rule of 5
 //Constructor
@@ -92,4 +93,12 @@ const Message& Conversation::at(std::size_t i) const {
         throw std::out_of_range("Index out of range");
     }
     return data_[i];
+}
+//begin function to return a pointer to the first message in the conversation
+const Message* Conversation::begin() const noexcept {
+    return data_;
+}
+//end function to return a pointer to one past the last message in the conversation
+const Message* Conversation::end() const noexcept {
+    return (data_ == nullptr) ? nullptr : data_ + size_;
 }
