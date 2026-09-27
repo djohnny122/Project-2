@@ -7,6 +7,13 @@
 
 
 ## Rule of Five evidence
+Within conversation.cpp the following are covered:
+- Constructor
+- Destructor
+- Copy Constructor
+- Copy Assignment Operator
+- Move Assignment Operator
+Fully abides by the Rule of Five.
 
 
 
