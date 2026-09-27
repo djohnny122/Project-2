@@ -1,3 +1,7 @@
+#include <string>
+#include <string_view>
+
+
 class SentinelScanner {
 public:
     explicit SentinelScanner(std::string sentinel);
