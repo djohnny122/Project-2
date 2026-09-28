@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <fstream>
 
 int main() {
     // TODO: write your tests here.
@@ -187,11 +188,93 @@ int main() {
         assert(!out2.sentinel_found);
     }
     //Test 10: Harness Turn Limit
-    {
-        
-    }
-    
+{   
+    //Needed classes for the Harness test
+    class MyInput : public InputSource {
+    public:
+        std::string read_line() override {
+            return "hello";
+        }
+
+        bool is_eof() const override {
+            return false;
+        }
+    };
+
+    class MyOutput : public OutputSink {
+    public:
+        void write(std::string_view text) override {
+        }
+    };
+    //Configure the Harness with a turn limit of 2
+    HarnessConfig config;
+    config.max_turns = 2;
+
+    //Create a ScriptedModelClient
+    auto model = std::make_unique<ScriptedModelClient>("scripts/greeting.script");
+
+    Harness harness(std::move(model), config);
+    //Run the Harness with the MyInput and MyOutput classes
+    MyInput input;
+    MyOutput output;
+    StopReason result = harness.run(input, output);
+    //The result should indicate that the turn limit was reached
+    assert(result.kind == StopReason::Kind::TurnLimit);
+}
     //Test 11: Harness Sentinel Halt
+{
+    //Needed classes for the Harness test
+    class MyInput : public InputSource {
+    public:
+        std::string read_line() override {
+            return "hello";
+        }
+
+        bool is_eof() const override {
+            return false;
+        }
+    };
+
+    class MyOutput : public OutputSink {
+    public:
+        void write(std::string_view text) override {
+        }
+    };
+    //Configure the Harness with a turn limit of 10
+    HarnessConfig config;
+    config.max_turns = 10;
+    //Create a ScriptedModelClient
+    auto model = std::make_unique<ScriptedModelClient>("scripts/greeting.script");
+
+    Harness harness(std::move(model), config);
+    //Run the Harness with the MyInput and MyOutput classes
+    MyInput input;
+    MyOutput output;
+    StopReason result = harness.run(input, output);
+    //The result should indicate that the sentinel was found
+    assert(result.kind == StopReason::Kind::Sentinel);
+    }
     //Test 12: Transcript Round-Trip
+    {
+        // Create a transcript file with a user message and an assistant reply
+        std::ofstream file("test_transcript.txt");
+        file << "role: user\n";
+        file << "Hello\n";
+        file << "---\n";
+        file << "role: assistant\n";
+        file << "Hi!\n";
+
+        file.close();
+        // Create a ReplayModelClient with the transcript file
+        ReplayModelClient replay("test_transcript.txt");
+        // Create a Conversation with a user message
+        Conversation conv;
+        conv.append(Message(Role::User, "Hello"));
+        // Generate a message from the ReplayModelClient
+        Message msg = replay.generate(conv);
+        // Check that the generated message is an assistant reply with the correct content
+        assert(msg.role() == Role::Assistant);
+        assert(msg.content() == "Hi!");
+    }
     return 0;
 }
