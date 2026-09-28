@@ -74,8 +74,77 @@ int main() {
         assert(copy.at(1).content() == convo3.at(1).content());
     }
     //Test 4: Rule of Five Move
+    {
+        //Create a Conversation
+        Conversation convo4;
+        //Append messages
+        convo4.append(Message(Role::User, "Hello"));
+        convo4.append(Message(Role::Assistant, "Hi!"));
+        //Save original pointer
+        const Message* original_ptr = convo4.begin();
+        //Move the Conversation
+        Conversation moved(std::move(convo4));
+        //Check that the moved Conversation has the same size and content as the original
+        assert(moved.size() == 2);
+        assert(moved.at(0).role() == Role::User);
+        assert(moved.at(0).content() == "Hello");
+        assert(moved.at(1).role() == Role::Assistant);
+        assert(moved.at(1).content() == "Hi!");
+        //Check that the original Conversation is now empty
+        assert(convo4.size() == 0);
+        assert(convo4.begin() == convo4.end());
+    }    
     //Test 5: Growth Behavior
+    {
+        //Create a Conversation
+        Conversation convo5;
+
+        const Message* orig_data = convo5.begin();
+        //Append first message
+        convo5.append(Message(Role::User, "User1"));
+        //Capacity should have grown, so the data pointer should be different
+        assert(convo5.begin() != orig_data); // Check that the data pointer has changed after appending
+        orig_data = convo5.begin();
+
+        //Append second message
+        convo5.append(Message(Role::User, "User2"));
+        //Capacity was 1, so it should have grown, and the data pointer should be different
+        assert(convo5.begin() != orig_data);
+        orig_data = convo5.begin();
+
+        //Append third message
+        convo5.append(Message(Role::User, "User3"));
+        //Capacity was 2, so it should have grown, and the data pointer should be different
+        assert(convo5.begin() != orig_data);
+        orig_data = convo5.begin();
+
+        //Append fourth message
+        convo5.append(Message(Role::User, "User4"));
+        //Capacity was 4, so it should not have grown, and the data pointer should be the same
+        assert(convo5.begin() == orig_data);
+        assert(convo5.size() == 4);
+
+        //Check the content of the messages
+        assert(convo5.at(0).content() == "User1");
+        assert(convo5.at(1).content() == "User2");
+        assert(convo5.at(2).content() == "User3");
+        assert(convo5.at(3).content() == "User4");
+    }
     //Test 6: Scanner Clean Text
+    {
+        // Create a SentinelScanner with a sentinel string
+        SentinelScanner scanner("<|end_conversation|>");
+
+        auto check1 = scanner.feed("Test string.");
+        auto chunk_check = scanner.flush();
+
+        //"Test string." does not contain the sentinel, so sentinel_found should be false
+        assert(!check1.sentinel_found);
+        assert(!chunk_check.sentinel_found);
+
+        // The safe_text should be the same as the input text
+        assert(check1.safe_text + chunk_check.safe_text == "Test string.");
+    }
     //Test 7: Scanner Split Sentinel 
     {
     const std::string sentinel = "<|end_conversation|>";
@@ -92,8 +161,36 @@ int main() {
     }
     }
     //Test 8: Scanner False Alarms
+    {   
+        // Create a SentinelScanner with a sentinel string
+        SentinelScanner scanner("<|end_conversation|>");
+        auto out1 = scanner.feed("<|end_world|>");
+        auto out2 = scanner.flush();
+
+        assert(!out1.sentinel_found);
+        assert(!out2.sentinel_found);
+        assert(out1.safe_text + out2.safe_text == "<|end_world|>");
+    }
     //Test 9: Scanner Bounded Memory
+    {     
+        // Create a SentinelScanner with a sentinel string
+        SentinelScanner scanner("<|end_conversation|>");
+
+        for (std::size_t i = 0; i < (4*1024*1024); ++i) {
+            char c ='x';
+            auto out = scanner.feed(std::string_view(&c, 1));
+            //The sentinel should not be found in this large input, so sentinel_found should be false
+            assert(!out.sentinel_found);
+        }
+        auto out2 = scanner.flush();
+        //The sentinel should not be found in the flush, so sentinel_found should be false
+        assert(!out2.sentinel_found);
+    }
     //Test 10: Harness Turn Limit
+    {
+        
+    }
+    
     //Test 11: Harness Sentinel Halt
     //Test 12: Transcript Round-Trip
     return 0;
